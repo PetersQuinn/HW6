@@ -33,18 +33,10 @@ def _ensure_pkg(name: str) -> None:
 
 
 def main() -> None:
-    # ------------------------------------------------------------------
-    # Prevent circular imports by NOT importing multivarious/__init__.py.
-    # Build only the minimal module tree that poly_fit needs:
-    #   multivarious.utl.format_plot  (CALLABLE)
-    #   multivarious.utl.plot_ECDF_ci (module with plot_ECDF_ci function)
-    #   multivarious.fit.poly_fit     (module with poly_fit function)
-    # ------------------------------------------------------------------
     _ensure_pkg("multivarious")
     _ensure_pkg("multivarious.utl")
     _ensure_pkg("multivarious.fit")
 
-    # ---- load format_plot and attach the FUNCTION so plot_ECDF_ci can call it ----
     format_plot_mod = _load_module(
         "multivarious.utl.format_plot",
         PKG_DIR / "utl" / "format_plot.py",
@@ -53,28 +45,23 @@ def main() -> None:
         raise AttributeError(
             "Expected function 'format_plot' inside format_plot.py, but it was not found."
         )
-    # IMPORTANT: attach callable (not module) so `from multivarious.utl import format_plot`
-    # yields a function that can be called.
-    sys.modules["multivarious.utl"].format_plot = format_plot_mod.format_plot  # type: ignore[attr-defined]
+ 
+    sys.modules["multivarious.utl"].format_plot = format_plot_mod.format_plot  
 
-    # ---- load plot_ECDF_ci (it does: from multivarious.utl import format_plot) ----
+   
     plot_ECDF_ci_mod = _load_module(
         "multivarious.utl.plot_ECDF_ci",
         PKG_DIR / "utl" / "plot_ECDF_ci.py",
     )
-    sys.modules["multivarious.utl"].plot_ECDF_ci = plot_ECDF_ci_mod  # type: ignore[attr-defined]
+    sys.modules["multivarious.utl"].plot_ECDF_ci = plot_ECDF_ci_mod  
 
-    # ---- load poly_fit (it does: from multivarious.utl.plot_ECDF_ci import plot_ECDF_ci) ----
+    
     poly_fit_mod = _load_module(
         "multivarious.fit.poly_fit",
         PKG_DIR / "fit" / "poly_fit.py",
     )
     poly_fit = poly_fit_mod.poly_fit
 
-    # ------------------------------------------------------------------
-    # Data: X = % fare increase, Y = % loss in ridership
-    # Model required: y_hat(x;c) = c x  => powers p = [1]
-    # ------------------------------------------------------------------
     X = np.array([5, 35, 20, 15, 4, 6, 18, 23, 38, 8, 12, 17, 17, 13, 7, 23], dtype=float)
     Y = np.array([1.5, 12, 7.5, 6.3, 1.2, 1.7, 7.2, 8, 14, 3.6, 3.7, 6.6, 4.4, 4.5, 2.8, 8], dtype=float)
 
@@ -94,13 +81,11 @@ def main() -> None:
     c_hat = float(c[0])
     se_c = float(Sc[0])
 
-    # correlation coefficient between X and Y (data correlation)
     r_xy = float(np.corrcoef(X, Y)[0, 1])
 
-    # constant conditional SD (residual SD)
     sigma_r = math.sqrt(float(Vr))
 
-    # 90% CI for slope c using Student-t, df consistent with poly_fit's Vr
+
     n = len(X)
     df = n - len(p) - 1  # Nd - Np - 1
     try:
